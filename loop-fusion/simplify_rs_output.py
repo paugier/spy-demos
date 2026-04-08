@@ -14,6 +14,10 @@ name = start.split("`")[1]
 
 print(name)
 
-content = content.replace(name + "::", "").replace("::Self", "").replace(str(Path.home()), "~")
+content = (
+    content.replace(name + "::", "")
+    .replace("::Self", "")
+    .replace(str(Path.home()), "~")
+)
 
 print(content)
