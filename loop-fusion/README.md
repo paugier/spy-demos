@@ -5,6 +5,8 @@ since this branch is just about syntactic sugar).
 
 - lazy_add.spy is a minimal example (only 1d and only `__add__`)
 - lazy_add_sin.spy is a more advanced example with 1d and 2d ndarray, `__add__` and `sin`
+  (a transcendental function, which can be interesting for benchmark since C compilers do
+  not automatically use SIMD for such functions even with -O3 IIUC)
 
 To see what happens, run
 
@@ -25,6 +27,4 @@ There are of course many things that could be improved to be able to do that wit
 
 - Fix bug `assert w_func.w_functype.kind != "metafunc"` (see comments lazy_add_sin.spy)
 
-- Avoid `def shape(self) -> gc_ptr[i32]`
-
-- Get `DTYPE` and `NDIM` (blue values) from `T=ndarray[DTYPE, NDIM]`?
+- A `@force_inline` decorator to do inlining during redshifting?
