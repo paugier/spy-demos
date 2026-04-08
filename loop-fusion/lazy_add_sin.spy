@@ -12,6 +12,13 @@ from types import StructType
 import math
 
 
+def ptr2list(ptr: gc_ptr[i32], length: i32) -> list[i32]:
+    ret: list[i32] = []
+    for idx in range(length):
+        ret.append(ptr[idx])
+    return ret
+
+
 @struct
 class ArrayData[DTYPE]:
     shape: gc_ptr[i32]
@@ -27,6 +34,9 @@ def ndarray(DTYPE, NDIM):
 
     @struct
     class Self:
+        _DTYPE = DTYPE
+        _NDIM = NDIM
+
         __ll__: gc_ptr[ArrayData_c]
         _size: i32
 
@@ -165,8 +175,8 @@ def ndarray(DTYPE, NDIM):
             return kernel
 
         @property
-        def shape(self) -> gc_ptr[i32]:
-            return self.__ll__.shape
+        def shape(self) -> list[i32]:
+            return ptr2list(self.__ll__.shape, NDIM)
 
         # @blue.metafunc
         # def fill(m_self, m_val) -> None:
@@ -204,6 +214,9 @@ def LazyAdd(DTYPE, NDIM, LEFT_T, RIGHT_T):
 
     @struct
     class Self:
+        _DTYPE = DTYPE
+        _NDIM = NDIM
+
         left: LEFT_T
         right: RIGHT_T
 
@@ -211,7 +224,7 @@ def LazyAdd(DTYPE, NDIM, LEFT_T, RIGHT_T):
             return self.left.size()
 
         @property
-        def shape(self) -> gc_ptr[i32]:
+        def shape(self) -> list[i32]:
             return self.left.shape
 
         @blue
@@ -284,6 +297,9 @@ def LazySin(DTYPE, NDIM, ARG_TYPE):
 
     @struct
     class Self:
+        _DTYPE = DTYPE
+        _NDIM = NDIM
+
         arg: ARG_TYPE
 
         @blue
@@ -307,7 +323,7 @@ def LazySin(DTYPE, NDIM, ARG_TYPE):
             return self.arg.size()
 
         @property
-        def shape(self) -> gc_ptr[i32]:
+        def shape(self) -> list[i32]:
             return self.arg.shape
 
         @blue.metafunc
@@ -378,27 +394,24 @@ def sin(m_x):
 
     # We would like to be able to get DTYPE and NDIM (blue values) from T
 
+    # We will be able to have (hasattr not yet avail but should be easy, see
+    # https://github.com/spylang/spy/issues/247#issuecomment-4155144151)
+
+    # if hasattr(T, "_DTYPE") and hasattr(T, "_NDIM"):
+
+    if True:
+        DTYPE = T._DTYPE
+        NDIM = T._NDIM
+        A = ndarray[DTYPE, NDIM]
+        Lazy = LazySin[DTYPE, NDIM, A]
+
+        def sin_lazy(x: A) -> Lazy:
+            return Lazy.__make__(x)
+
+        return OpSpec(sin_lazy)
+
     # We would like to be able to have blue iterators
-
     # for DTYPE in unroll([f32, f64]):
-
-    A1 = ndarray[f64, 1]
-    if T == A1:
-        Lazy = LazySin[f64, 1, A1]
-
-        def sin_lazy(x: A1) -> Lazy:
-            return Lazy.__make__(x)
-
-        return OpSpec(sin_lazy)
-
-    A2 = ndarray[f64, 2]
-    if T == A2:
-        Lazy = LazySin[f64, 2, A2]
-
-        def sin_lazy(x: A2) -> Lazy:
-            return Lazy.__make__(x)
-
-        return OpSpec(sin_lazy)
 
     # raise StaticError(f"sin not defined for {T}")
 
@@ -436,13 +449,13 @@ def main() -> None:
     # 1.0 + sin(1.0) \simeq 1.8415
     # -----------------------------------------------------------------------
 
-    # out1_sin: ndarray[f64, 1] = x + sin(x)
+    out1_sin: ndarray[f64, 1] = x + sin(x)
 
     # TypeError: mismatched types: def w_abs(vm: "SPyVM", w_x: W_I32) -> W_I32:
     # assert abs(out1_sin[0] - 1.84147) < 0.00001
 
-    # print("should be very small")
-    # print(out1_sin[0] - 1.84147)
+    print("should be very small")
+    print(out1_sin[0] - 1.84147)
 
     out2_sin: ndarray[f64, 2] = x2 + sin(x2)
     print("should be very small")
