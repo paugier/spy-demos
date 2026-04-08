@@ -1,4 +1,3 @@
-
 from unsafe import gc_alloc, gc_ptr
 from operator import OpSpec
 from types import StructType
@@ -13,7 +12,6 @@ class ArrayData[DTYPE]:
 
 @blue.generic
 def ndarray(DTYPE):
-
     ArrayData_c = ArrayData[DTYPE]
 
     @struct
@@ -22,9 +20,9 @@ def ndarray(DTYPE):
 
         @blue.metafunc
         def __new__(*args_m):
-
             NDIM = 1
             if NDIM == 1:
+
                 def new(type_: StructType, n0: i32) -> Self:
                     ll = gc_alloc[ArrayData_c](1)
                     ll.shape = gc_alloc[i32](NDIM)
@@ -46,13 +44,22 @@ def ndarray(DTYPE):
 
         @blue.metafunc
         def __add__(m_self, m_other):
-            LEFT_T  = m_self.static_type
+            LEFT_T = m_self.static_type
             RIGHT_T = m_other.static_type
             Lazy = LazyAdd[DTYPE, LEFT_T, RIGHT_T]
 
             def add(a: LEFT_T, b: RIGHT_T) -> Lazy:
                 return Lazy.__make__(a, b)
+
             return OpSpec(add)
+
+        @blue
+        @classmethod
+        def make_kernel(cls):
+            def kernel(arr: Self, i: i32) -> DTYPE:
+                return arr.__ll__.items[i]
+
+            return kernel
 
     return Self
 
@@ -63,35 +70,47 @@ def LazyAdd(DTYPE, LEFT_T, RIGHT_T):
 
     @struct
     class Self:
-        left:  LEFT_T
+        left: LEFT_T
         right: RIGHT_T
 
-        @blue.metafunc
-        def __getitem__(m_self, m_i):
-            def get(expr: Self, i: i32) -> DTYPE:
-                return expr.left[i] + expr.right[i]
-            return OpSpec(get)
+        def size(self: Self) -> i32:
+            return self.left.size()
+
+        @blue
+        @classmethod
+        def make_kernel(cls):
+            left_kernel = LEFT_T.make_kernel()
+            right_kernel = RIGHT_T.make_kernel()
+
+            def kernel(expr: Self, i: i32) -> DTYPE:
+                return left_kernel(expr.left, i) + right_kernel(expr.right, i)
+
+            return kernel
 
         @blue.metafunc
         def __convert_to__(m_expT, m_gotT, m_x):
             if m_expT.blueval == A:
+                kernel = Self.make_kernel()
+
                 def materialize(expr: Self) -> A:
                     n = expr.left.size()
                     out = A(n)
                     for i in range(n):
-                        out[i] = expr[i]     # __getitem__ walks the tree
+                        out[i] = kernel(expr, i)
                     return out
+
                 return OpSpec(materialize, [m_x])
             return OpSpec.NULL
 
         @blue.metafunc
         def __add__(m_self, m_other):
-            LEFT_T2  = m_self.static_type
+            LEFT_T2 = m_self.static_type
             RIGHT_T2 = m_other.static_type
             Lazy = LazyAdd[DTYPE, LEFT_T2, RIGHT_T2]
 
             def add(a: LEFT_T2, b: RIGHT_T2) -> Lazy:
                 return Lazy.__make__(a, b)
+
             return OpSpec(add)
 
     return Self
@@ -108,4 +127,4 @@ def main() -> None:
     x = ndarray[f64](N)
     fill(x, 1.0)
 
-    out1: ndarray[f64] = x + x
+    out1: ndarray[f64] = x + x + x
