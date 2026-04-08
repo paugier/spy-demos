@@ -1,7 +1,6 @@
 from unsafe import gc_alloc, gc_ptr
 from operator import OpSpec
 from types import StructType
-import math
 
 
 @struct

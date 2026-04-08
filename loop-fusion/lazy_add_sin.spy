@@ -1,13 +1,6 @@
 """
-lazy_array.spy — expression fusion demo for SPy
+Expression fusion demo for SPy
 
-Demonstrates that `result = x + sin(x)` compiles to a single fused loop
-with no temporary arrays, using the lazy expression template pattern.
-
-Run with:
-    spy lazy_array.spy            # interpreted
-    spy redshift lazy_array.spy   # show the fused redshifted AST
-    spy build lazy_array.spy      # compile to native
 """
 
 # mypy: ignore-errors
@@ -36,8 +29,6 @@ def ndarray(DTYPE, NDIM):
     class Self:
         __ll__: gc_ptr[ArrayData_c]
         _size: i32
-
-        # --- construction ---------------------------------------------------
 
         @blue.metafunc
         def __new__(*args_m):
@@ -398,8 +389,6 @@ def sin(m_x):
         def sin_lazy(x: A1) -> Lazy:
             return Lazy.__make__(x)
 
-        print(A1)
-
         return OpSpec(sin_lazy)
 
     A2 = ndarray[f64, 2]
@@ -419,8 +408,8 @@ def main() -> None:
     x = ndarray[f64, 1](N)
     x.fill(1.0)
 
-    # x2 = ndarray[f64, 2](N, N)
-    # x2.fill(1.0)
+    x2 = ndarray[f64, 2](N, N)
+    x2.fill(1.0)
 
     # -----------------------------------------------------------------------
     # Case 1: simple addition — x + x
@@ -455,6 +444,6 @@ def main() -> None:
     # print("should be very small")
     # print(out1_sin[0] - 1.84147)
 
-    # out2_sin: ndarray[f64, 2] = x2 + sin(x2)
-    # print("should be very small")
-    # print(out2_sin[0, 0] - 1.84147)
+    out2_sin: ndarray[f64, 2] = x2 + sin(x2)
+    print("should be very small")
+    print(out2_sin[0, 0] - 1.84147)
