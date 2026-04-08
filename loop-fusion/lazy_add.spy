@@ -1,0 +1,111 @@
+
+from unsafe import gc_alloc, gc_ptr
+from operator import OpSpec
+from types import StructType
+import math
+
+
+@struct
+class ArrayData[DTYPE]:
+    shape: gc_ptr[i32]
+    items: gc_ptr[DTYPE]
+
+
+@blue.generic
+def ndarray(DTYPE):
+
+    ArrayData_c = ArrayData[DTYPE]
+
+    @struct
+    class Self:
+        __ll__: gc_ptr[ArrayData_c]
+
+        @blue.metafunc
+        def __new__(*args_m):
+
+            NDIM = 1
+            if NDIM == 1:
+                def new(type_: StructType, n0: i32) -> Self:
+                    ll = gc_alloc[ArrayData_c](1)
+                    ll.shape = gc_alloc[i32](NDIM)
+                    ll.shape[0] = n0
+                    total = n0
+                    ll.items = gc_alloc[DTYPE](total)
+                    return Self.__make__(ll)
+
+            return OpSpec(new)
+
+        def __getitem__(self: Self, i: i32) -> DTYPE:
+            return self.__ll__.items[i]
+
+        def __setitem__(self: Self, i: i32, val: DTYPE) -> None:
+            self.__ll__.items[i] = val
+
+        def size(self: Self) -> i32:
+            return self.__ll__.shape[0]
+
+        @blue.metafunc
+        def __add__(m_self, m_other):
+            LEFT_T  = m_self.static_type
+            RIGHT_T = m_other.static_type
+            Lazy = LazyAdd[DTYPE, LEFT_T, RIGHT_T]
+
+            def add(a: LEFT_T, b: RIGHT_T) -> Lazy:
+                return Lazy.__make__(a, b)
+            return OpSpec(add)
+
+    return Self
+
+
+@blue.generic
+def LazyAdd(DTYPE, LEFT_T, RIGHT_T):
+    A = ndarray[DTYPE]
+
+    @struct
+    class Self:
+        left:  LEFT_T
+        right: RIGHT_T
+
+        @blue.metafunc
+        def __getitem__(m_self, m_i):
+            def get(expr: Self, i: i32) -> DTYPE:
+                return expr.left[i] + expr.right[i]
+            return OpSpec(get)
+
+        @blue.metafunc
+        def __convert_to__(m_expT, m_gotT, m_x):
+            if m_expT.blueval == A:
+                def materialize(expr: Self) -> A:
+                    n = expr.left.size()
+                    out = A(n)
+                    for i in range(n):
+                        out[i] = expr[i]     # __getitem__ walks the tree
+                    return out
+                return OpSpec(materialize, [m_x])
+            return OpSpec.NULL
+
+        @blue.metafunc
+        def __add__(m_self, m_other):
+            LEFT_T2  = m_self.static_type
+            RIGHT_T2 = m_other.static_type
+            Lazy = LazyAdd[DTYPE, LEFT_T2, RIGHT_T2]
+
+            def add(a: LEFT_T2, b: RIGHT_T2) -> Lazy:
+                return Lazy.__make__(a, b)
+            return OpSpec(add)
+
+    return Self
+
+
+def fill(arr: ndarray[f64], val: f64) -> None:
+    """Fill array with a constant value."""
+    for i in range(arr.size()):
+        arr[i] = val
+
+
+def main() -> None:
+    N: i32 = 8
+    x = ndarray[f64](N)
+    fill(x, 1.0)
+
+    out1: ndarray[f64] = x + x

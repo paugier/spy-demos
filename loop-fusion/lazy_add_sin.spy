@@ -1,0 +1,348 @@
+"""
+lazy_array.spy — expression fusion demo for SPy
+
+Demonstrates that `result = x + sin(x)` compiles to a single fused loop
+with no temporary arrays, using the lazy expression template pattern.
+
+Run with:
+    spy lazy_array.spy            # interpreted
+    spy redshift lazy_array.spy   # show the fused redshifted AST
+    spy build lazy_array.spy      # compile to native
+"""
+
+from unsafe import gc_alloc, gc_ptr
+from operator import OpSpec
+from types import StructType
+import math
+
+
+# ---------------------------------------------------------------------------
+# Low-level backing store
+# ---------------------------------------------------------------------------
+
+@struct
+class ArrayData[DTYPE]:
+    shape: gc_ptr[i32]
+    items: gc_ptr[DTYPE]
+
+
+# ---------------------------------------------------------------------------
+# ndarray — the concrete array type
+#
+# Implements __getitem__ so it can act as a leaf node in a lazy expression
+# tree, and __add__ so that `a + b` builds a LazyAdd node.
+# ---------------------------------------------------------------------------
+
+@blue.generic
+def ndarray(DTYPE, NDIM):
+
+    if NDIM > 2:
+        raise StaticError("NDIM > 2 not supported")
+
+    ArrayData_c = ArrayData[DTYPE]
+
+    @struct
+    class Self:
+        __ll__: gc_ptr[ArrayData_c]
+
+        # --- construction ---------------------------------------------------
+
+        @blue.metafunc
+        def __new__(*args_m):
+            if len(args_m) != NDIM + 1:
+                raise StaticError("Wrong number of shape arguments")
+
+            # def new(type_: StructType, *args: Args[NDIM, i32]) -> Self:
+            #     ll = gc_alloc[ArrayData_c](1)
+            #     ll.shape = gc_alloc[i32](NDIM)
+            #     for i, n in unroll(enumerate(args)):
+            #         ll.shape[i] = n
+            #     total = 1
+            #     for n in unroll(args):
+            #         total = total * n
+            #     ll.items = gc_alloc[DTYPE](total)
+            #     return Self.__make__(ll)
+
+            if NDIM == 1:
+                def new(type_: StructType, n0: i32) -> Self:
+                    ll = gc_alloc[ArrayData_c](1)
+                    ll.shape = gc_alloc[i32](NDIM)
+                    ll.shape[0] = n0
+                    total = n0
+                    ll.items = gc_alloc[DTYPE](total)
+                    return Self.__make__(ll)
+
+            elif NDIM == 2:
+                def new(type_: StructType, n0: i32) -> Self:
+                    ll = gc_alloc[ArrayData_c](1)
+                    ll.shape = gc_alloc[i32](NDIM)
+                    ll.shape[0] = n0
+                    total = n0
+                    ll.items = gc_alloc[DTYPE](total)
+                    return Self.__make__(ll)
+
+            else:
+                raise StaticError("Should never happen")
+
+            return OpSpec(new)
+
+        # --- leaf node interface: element access ----------------------------
+        #
+        # __getitem__ is the common interface shared by all lazy nodes.
+        # For ndarray it just reads from the items pointer.
+
+        @blue.metafunc
+        def __getitem__(m_self, m_i):
+            def get(self: Self, i: i32) -> DTYPE:
+                return self.__ll__.items[i]
+            return OpSpec(get)
+
+        # --- write back (used during materialisation) ----------------------
+
+        @blue.metafunc
+        def __setitem__(m_self, m_i, m_val):
+            def set(self: Self, i: i32, val: DTYPE) -> None:
+                self.__ll__.items[i] = val
+            return OpSpec(set)
+
+        # --- shape helper --------------------------------------------------
+
+        @blue.metafunc
+        def size(m_self):
+            # def _size(self: Self) -> i32:
+            #     total = 1
+            #     for dim in unroll(range(NDIM)):
+            #         total = total * self.__ll__.shape[dim]
+            #     return total
+            if NDIM == 1:
+                def _size(self: Self) -> i32:
+                    return self.__ll__.shape[0]
+            elif NDIM == 2:
+                def _size(self: Self) -> i32:
+                    shape = self.__ll__.shape
+                    return shape[0] * shape[1]
+            else:
+                raise StaticError("Should never happen")
+
+            return OpSpec(_size)
+
+        # --- operator + builds a LazyAdd node, never allocates -------------
+
+        @blue.metafunc
+        def __add__(m_self, m_other):
+            LEFT_T  = m_self.static_type
+            RIGHT_T = m_other.static_type
+            Lazy = LazyAdd[DTYPE, NDIM, LEFT_T, RIGHT_T]
+
+            def add(a: LEFT_T, b: RIGHT_T) -> Lazy:
+                return Lazy.__make__(a, b)
+            return OpSpec(add)
+
+    return Self
+
+
+# ---------------------------------------------------------------------------
+# LazyAdd — binary addition node
+#
+# Generic over LEFT_T and RIGHT_T so it can hold any combination of
+# ndarray, LazySin, or other LazyAdd nodes as children.
+# ---------------------------------------------------------------------------
+
+@blue.generic
+def LazyAdd(DTYPE, NDIM, LEFT_T, RIGHT_T):
+    A = ndarray[DTYPE, NDIM]
+
+    @struct
+    class Self:
+        left:  LEFT_T
+        right: RIGHT_T
+
+        # --- lazy node interface -------------------------------------------
+
+        @blue.metafunc
+        def __getitem__(m_self, m_i):
+            # Both children implement __getitem__, so this recurses into them.
+            # The entire call chain is resolved at blue time — no runtime
+            # dispatch, no virtual calls.
+            def get(expr: Self, i: i32) -> DTYPE:
+                return expr.left[i] + expr.right[i]
+            return OpSpec(get)
+
+        # --- materialise into a concrete ndarray ---------------------------
+        #
+        # __convert_to__ is triggered when this lazy node is assigned to an
+        # ndarray.  It emits ONE loop that walks the full expression tree via
+        # __getitem__ — this is the fused loop.
+
+        @blue.metafunc
+        def __convert_to__(m_expT, m_gotT, m_x):
+            if m_expT.blueval == A:
+                def materialize(expr: Self) -> A:
+                    n = expr.left.size()
+                    out = A(n)
+                    for i in range(n):
+                        out[i] = expr[i]     # __getitem__ walks the tree
+                    return out
+                return OpSpec(materialize, [m_x])
+            return OpSpec.NULL
+
+        # --- chaining: LazyAdd + anything ----------------------------------
+
+        @blue.metafunc
+        def __add__(m_self, m_other):
+            LEFT_T2  = m_self.static_type
+            RIGHT_T2 = m_other.static_type
+            Lazy = LazyAdd[DTYPE, NDIM, LEFT_T2, RIGHT_T2]
+
+            def add(a: LEFT_T2, b: RIGHT_T2) -> Lazy:
+                return Lazy.__make__(a, b)
+            return OpSpec(add)
+
+    return Self
+
+
+# ---------------------------------------------------------------------------
+# LazySin — unary sin node
+# ---------------------------------------------------------------------------
+
+@blue.generic
+def LazySin(DTYPE, NDIM):
+    A = ndarray[DTYPE, NDIM]
+
+    @struct
+    class Self:
+        arg: A
+
+        # --- lazy node interface -------------------------------------------
+
+        @blue.metafunc
+        def __getitem__(m_self, m_i):
+            def get(expr: Self, i: i32) -> DTYPE:
+                return math.sin(expr.arg[i])
+            return OpSpec(get)
+
+        @blue.metafunc
+        def size(m_self):
+            def _size(expr: Self) -> i32:
+                return expr.arg.size()
+            return OpSpec(_size)
+
+        # --- materialise ---------------------------------------------------
+
+        @blue.metafunc
+        def __convert_to__(m_expT, m_gotT, m_x):
+            if m_expT.blueval == A:
+                def materialize(expr: Self) -> A:
+                    n = expr.arg.size()
+                    out = A(n)
+                    for i in range(n):
+                        out[i] = expr[i]
+                    return out
+                return OpSpec(materialize, [m_x])
+            return OpSpec.NULL
+
+        # --- chaining: LazySin + anything ----------------------------------
+
+        @blue.metafunc
+        def __add__(m_self, m_other):
+            LEFT_T  = m_self.static_type
+            RIGHT_T = m_other.static_type
+            Lazy = LazyAdd[DTYPE, NDIM, LEFT_T, RIGHT_T]
+
+            def add(a: LEFT_T, b: RIGHT_T) -> Lazy:
+                return Lazy.__make__(a, b)
+            return OpSpec(add)
+
+    return Self
+
+
+# ---------------------------------------------------------------------------
+# sin — free metafunction
+#
+# Dispatches on the static type of its argument:
+#   - scalar f64  -> eager math.sin call
+#   - ndarray     -> LazySin node (no computation)
+# ---------------------------------------------------------------------------
+
+@blue.metafunc
+def sin(m_x):
+    T = m_x.static_type
+
+    if T == f64:
+        def sin_scalar(x: f64) -> f64:
+            return math.sin(x)
+        return OpSpec(sin_scalar)
+
+    # Generic array case: extract DTYPE and NDIM from the ndarray type
+    # and return a LazySin node.
+    for DTYPE in [f32, f64]:
+        for NDIM in [1, 2]:
+            if T == ndarray[DTYPE, NDIM]:
+                Lazy = LazySin[DTYPE, NDIM]
+                def sin_lazy(x: ndarray[DTYPE, NDIM]) -> Lazy:
+                    return Lazy.__make__(x)
+                return OpSpec(sin_lazy)
+
+    # raise StaticError(f"sin not defined for {T}")
+
+
+# ---------------------------------------------------------------------------
+# Demo
+#
+# The key thing to observe in `spy redshift lazy_array.spy`:
+#
+#   def main() -> None:
+#       ...
+#       for i in range(n):
+#           out[i] = x[i] + sin(x[i])    ← ONE fused loop, no temps
+#
+# There is no separate loop for sin and no separate loop for add.
+# The LazyAdd and LazySin nodes never appear in the redshifted output —
+# they are fully consumed by the blue dispatch machinery.
+# ---------------------------------------------------------------------------
+
+def fill(arr: ndarray[f64, 1], val: f64) -> None:
+    """Fill array with a constant value."""
+    for i in range(arr.size()):
+        arr[i] = val
+
+def main() -> None:
+    N: i32 = 8
+    x   = ndarray[f64, 1](N)
+    fill(x, 1.0)
+
+    # -----------------------------------------------------------------------
+    # Case 1: simple addition — x + x
+    #
+    # LazyAdd[f64, 1, ndarray[f64,1], ndarray[f64,1]] is built at runtime,
+    # then __convert_to__ materialises it in one loop:
+    #   out[i] = x[i] + x[i]
+    # -----------------------------------------------------------------------
+    out1: ndarray[f64, 1] = x + x
+
+    # -----------------------------------------------------------------------
+    # Case 2: x + sin(x)
+    #
+    # sin(x) builds LazySin[f64,1] — just stores a pointer, no computation.
+    # x + sin(x) builds LazyAdd[f64,1, ndarray[f64,1], LazySin[f64,1]].
+    # Assignment materialises in one fused loop:
+    #   out[i] = x[i] + sin(x[i])
+    # -----------------------------------------------------------------------
+    # out2: ndarray[f64, 1] = x + sin(x)
+
+    # -----------------------------------------------------------------------
+    # Case 3: x + sin(x) + x  (three-way fusion)
+    #
+    # Builds LazyAdd[f64,1,
+    #           LazyAdd[f64,1, ndarray, LazySin],
+    #           ndarray]
+    # Materialised in one fused loop:
+    #   out[i] = (x[i] + sin(x[i])) + x[i]
+    # -----------------------------------------------------------------------
+    # out3: ndarray[f64, 1] = x + sin(x) + x
+
+    # Print a single element from each result to confirm correctness.
+    # Expected: 2.0, 1.0 + sin(1.0) ≈ 1.8415, 2.0 + sin(1.0) ≈ 2.8415
+    print(out1[0])
+    # print(out2[0])
+    # print(out3[0])
