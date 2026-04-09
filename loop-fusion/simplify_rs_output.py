@@ -4,20 +4,38 @@ import sys
 
 from pathlib import Path
 
-content = Path(sys.argv[1]).read_text()
+input_text = sys.stdin.read()
 
-start = content.split("::", 1)[0]
+files = {}
 
-print(start)
+lines_file = []
+name = None
 
-name = start.split("`")[1]
+for line in input_text.split("\n"):
+    if line.startswith("# ") and line.endswith(".spy"):
+        # new file
+        if name is not None:
+            files[name] = "\n".join(lines_file)
 
-print(name)
+        name = line[2:-4]
+    else:
+        lines_file.append(line)
 
-content = (
-    content.replace(name + "::", "")
-    .replace("::Self", "")
-    .replace(str(Path.home()), "~")
-)
+if name is None:
+    start = input_text.split("::", 1)[0]
+    name = start.split("`")[1]
 
-print(content)
+if name not in files:
+    files[name] = "\n".join(lines_file)
+
+
+for name, content in files.items():
+    files[name] = (
+        content.replace(name + "::", "")
+        .replace("::Self", "")
+        .replace(str(Path.home()), "~")
+    )
+
+for name, content in files.items():
+    print(f"# {name}.spy")
+    print(files[name])

@@ -3,21 +3,27 @@
 This demo uses the branch https://github.com/paugier/spy/tree/generic-class (but this is a detail
 since this branch is just about syntactic sugar).
 
-- lazy_add.spy is a minimal example (only 1d and only `__add__`)
-- lazy_add_sin.spy is a more advanced example with 1d and 2d ndarray, `__add__` and `sin`
+This demo is organized with 3 scripts using 3 implementations of minimal array libraries.
+
+- `lazy_add.spy` (which uses `lib_array1d.spy`) is a minimal example (only 1d and only `__add__`).
+
+- `simple_loop.spy` (which uses `lib_array1d_simple.spy`) is a minimal example without loop fusion.
+
+- `lazy_add_sin.spy` (which uses `lib_ndarray.spy`) is a more advanced example with 1d and 2d ndarray, `__add__` and `sin`
   (a transcendental function, which can be interesting for benchmark since C compilers do
   not automatically use SIMD for such functions even with -O3 IIUC)
 
-To see what happens, run
+To see what happens, run commands like
 
 ```sh
-spy rs lazy_add.spy -> result.spy
-./simplify_rs_output.py result.spy
+spy rs lazy_add.spy --dump lib_array1d.spy | ./simplify_rs_output.py
 ```
 
-There is just one loop per array expression (for example `out1: ndarray[f64] = x + x + x`).
+See the Makefile for other useful commands.
 
-Note that SPy fails to build this files.
+For `lazy_add.spy` and `lazy_add_sin.spy`, there is just one loop per array expression (for example `out1: ndarray[f64] = x + x + x`).
+
+Note that SPy currently fails to build these files!!!
 
 There are of course many things that could be improved to be able to do that with nicer code, in particular:
 
@@ -25,6 +31,8 @@ There are of course many things that could be improved to be able to do that wit
 
 - `unroll` for blue loops
 
-- Fix bug `assert w_func.w_functype.kind != "metafunc"` (see comments lazy_add_sin.spy)
+- Fix bug `assert w_func.w_functype.kind != "metafunc"` (see comments `lazy_add_sin.spy`)
 
-- A `@force_inline` decorator to do inlining during redshifting?
+- A `@force_inline` decorator to force inlining during redshifting?
+
+- Good way to implement a full array libraries without too much repetitions (heritage, protocols?)

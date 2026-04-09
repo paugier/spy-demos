@@ -1,7 +1,7 @@
 # mypy: ignore-errors
 # pylint: skip-file
 
-from lib_array1d import ndarray
+from lib_array1d_simple import ndarray
 
 
 def main() -> None:
