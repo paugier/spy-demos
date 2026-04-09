@@ -435,17 +435,17 @@ def main() -> None:
     # then __convert_to__ materialises it in one loop:
     #   out[i] = x[i] + x[i]
     # -----------------------------------------------------------------------
-    # out1: ndarray[f64, 1] = x + x
-    # assert out1[0] == 2.0
+    out1: ndarray[f64, 1] = x + x
+    assert out1[0] == 2.0
 
-    # out1 = x + x + x
-    # assert out1[0] == 3.0
+    out1 = x + x + x
+    assert out1[0] == 3.0
 
-    # out2: ndarray[f64, 2] = x2 + x2
-    # assert out2[0, 0] == 2.0
+    out2: ndarray[f64, 2] = x2 + x2
+    assert out2[0, 0] == 2.0
 
-    # out2 = x2 + x2 + x2
-    # assert out2[0, 0] == 3.0
+    out2 = x2 + x2 + x2
+    assert out2[0, 0] == 3.0
 
     # -----------------------------------------------------------------------
     # Case 2: x + sin(x)

@@ -1,0 +1,65 @@
+# mypy: ignore-errors
+# pylint: skip-file
+
+from unsafe import gc_alloc, gc_ptr
+from operator import OpSpec
+from types import StructType
+
+
+@struct
+class ArrayData[DTYPE]:
+    shape: gc_ptr[i32]
+    items: gc_ptr[DTYPE]
+
+
+@blue.generic
+def ndarray(DTYPE, NDIM):
+    if NDIM > 1:
+        raise StaticError("NDIM > 1 not supported")
+
+    ArrayData_c = ArrayData[DTYPE]
+
+    @struct
+    class Self:
+        __ll__: gc_ptr[ArrayData_c]
+        _size: i32
+
+        @blue.metafunc
+        def __new__(*args_m):
+            if len(args_m) != NDIM + 1:
+                raise StaticError("Wrong number of shape arguments")
+
+            if NDIM == 1:
+
+                def new(type_: StructType, n0: i32) -> Self:
+                    ll = gc_alloc[ArrayData_c](1)
+                    ll.shape = gc_alloc[i32](NDIM)
+                    ll.shape[0] = n0
+                    _size = n0
+                    ll.items = gc_alloc[DTYPE](_size)
+                    return Self.__make__(ll, _size)
+
+            return OpSpec(new)
+
+        @blue.metafunc
+        def size(m_self):
+            if NDIM == 1:
+
+                def _size(self: Self) -> i32:
+                    return self.__ll__.shape[0]
+
+            return OpSpec(_size)
+
+        # to avoid a bug
+        #    File "~/dev/spy/spy/vm/function.py", line 278, in op_CALL
+        #    assert w_func.w_functype.kind != "metafunc"
+
+        # def size(self) -> i32:
+        #     return self._size
+
+    return Self
+
+
+def main() -> None:
+    x = ndarray[f64, 1](8)
+    x.size()
