@@ -13,15 +13,11 @@ This demo is organized with 3 scripts using 3 implementations of minimal array l
   (a transcendental function, which can be interesting for benchmark since C compilers do
   not automatically use SIMD for such functions even with -O3 IIUC)
 
-To see what happens, run commands like
+To see what happens, one has to run redshift commands. Some useful commands have been gathered in a Makefile.
 
-```sh
-spy rs lazy_add.spy --dump lib_array1d.spy | ./simplify_rs_output.py
-```
+The simplest way to see the loop fusion is to compare the outputs of `make rs_libsimple` and `make rs_liblazy`.
 
-See the Makefile for other useful commands.
-
-For `lazy_add.spy` and `lazy_add_sin.spy`, there is just one loop per array expression (for example `out1: ndarray[f64] = x + x + x`).
+For the lazy implementations, there is just one loop per array expression (for example `out1: ndarray[f64] = x + x + x`).
 
 Note that SPy currently fails to build these files!!!
 
