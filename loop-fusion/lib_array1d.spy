@@ -58,6 +58,7 @@ def ndarray(DTYPE):
         @blue
         @classmethod
         def make_kernel(cls):
+            # @force_inline
             def kernel(arr: Self, i: i32) -> DTYPE:
                 return arr.__ll__.items[i]
 
@@ -89,6 +90,7 @@ def LazyAdd(DTYPE, LEFT_T, RIGHT_T):
             left_kernel = LEFT_T.make_kernel()
             right_kernel = RIGHT_T.make_kernel()
 
+            # @force_inline
             def kernel(expr: Self, i: i32) -> DTYPE:
                 return left_kernel(expr.left, i) + right_kernel(expr.right, i)
 

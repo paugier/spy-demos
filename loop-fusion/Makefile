@@ -30,3 +30,10 @@ test_lazysin:
 
 test_simple:
 	spy simple_loop.spy
+
+
+rs_lazysimple:
+	spy rs lazy_simple.spy | ./simplify_rs_output.py
+
+rs_lazysimple_noinline:
+	spy rs --no-inline lazy_simple.spy | ./simplify_rs_output.py

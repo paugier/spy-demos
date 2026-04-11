@@ -1,0 +1,52 @@
+# mypy: ignore-errors
+# pylint: skip-file
+
+
+@struct
+class Array:
+
+    val: i32
+
+    @blue
+    @classmethod
+    def make_kernel(cls):
+
+        @force_inline
+        def kernel(arr: Array, i: i32) -> i32:
+            return arr.val
+
+        return kernel
+
+
+@blue.generic
+def Lazy(EXPR_T):
+
+    @struct
+    class Self:
+        expr: EXPR_T
+
+        @blue
+        @classmethod
+        def make_kernel(cls):
+            expr_kernel = EXPR_T.make_kernel()
+
+            @force_inline
+            def kernel(expr: Self, i: i32) -> i32:
+                return expr_kernel(expr.expr, i)
+
+            return kernel
+
+    return Self
+
+
+def main() -> None:
+
+    arr = Array(42)
+
+    Lazy_c = Lazy[Array]
+
+    kernel = Lazy_c.make_kernel()
+
+    lazy = Lazy_c(arr)
+
+    print(kernel(lazy, 1))

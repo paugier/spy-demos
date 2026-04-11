@@ -36,17 +36,22 @@ code.
 
 - [ ] `type A = ndarray[DTYPE, NDIM]` syntax for generic struct & update the code
 
-- [ ] `__blue_checks__` for generic struct (see
-  https://github.com/spylang/spy/pull/448#issuecomment-4199438746) & update the code
+- [ ] `__blue_checks__` for generic struct
+  (https://github.com/spylang/spy/pull/448#issuecomment-4199438746) & update the code
 
-- [x] Fix bug `assert w_func.w_functype.kind != "metafunc"` (see https://github.com/spylang/spy/issues/463)
+- [x] Fix bug `assert w_func.w_functype.kind != "metafunc"`
+  (https://github.com/spylang/spy/issues/463)
 
 - [ ] Use metafunc methods
 
-- [ ] `hasattr` in SPy (see https://github.com/spylang/spy/pull/462)
+- [ ] `hasattr` in SPy (https://github.com/spylang/spy/pull/462)
 
-- [ ] A `@force_inline` decorator to force inlining during redshifting (see
-  https://github.com/spylang/spy/issues/464) & update the code
+- [ ] A `@force_inline` decorator to force inlining during redshifting
+  (https://github.com/spylang/spy/issues/464) & update the code
+
+- [ ] `abs(1.2)` in SPy (https://github.com/spylang/spy/issues/461) & update the code
+
+- [ ] `simplify_rs_output.py` as a rs flag.
 
 ### Less important
 
