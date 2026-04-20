@@ -1,0 +1,15 @@
+# mypy: ignore-errors
+# pylint: skip-file
+
+
+@struct
+class Self:
+    __ll__: i32
+
+    def __new__(n0: i32) -> Self:
+        return Self.__make__(n0)
+
+
+def main() -> None:
+    N: i32 = 8
+    x = Self.__make__(N)

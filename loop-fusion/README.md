@@ -51,7 +51,9 @@ code.
 
 - [ ] `abs(1.2)` in SPy (https://github.com/spylang/spy/issues/461) & update the code
 
-- [ ] `simplify_rs_output.py` as a rs flag.
+- [ ] `simplify_rs_output.py` as a rs flag (https://github.com/spylang/spy/issues/474).
+
+- Fix build (https://github.com/spylang/spy/issues/475)
 
 ### Less important
 
