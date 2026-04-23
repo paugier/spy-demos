@@ -1,0 +1,29 @@
+from time import time
+
+from lib_array1d_simple import ndarray as array_simple
+from lib_array1d import ndarray as array1d
+from lib_ndarray import ndarray
+
+size = 1000000
+
+
+def bench[arrayT]() -> None:
+    arr = arrayT(size)
+    arr.fill(1.0)
+
+    t_start = time()
+
+    res: arrayT
+
+    for _ in range(100):
+        res = arr + arr + arr + arr
+
+    print(arrayT)
+    print(res[0])
+    print(time() - t_start)
+
+
+def main() -> None:
+    bench[array_simple[f64]]()
+    bench[array1d[f64]]()
+    bench[ndarray[f64, 1]]()
