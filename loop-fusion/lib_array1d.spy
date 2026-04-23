@@ -2,7 +2,7 @@
 # pylint: skip-file
 
 from unsafe import gc_alloc, gc_ptr
-from operator import OpSpec
+from operator import OpSpec, MetaArg
 from types import StructType
 
 
@@ -36,7 +36,7 @@ def ndarray(DTYPE):
             NDIM = 1
             if NDIM == 1:
 
-                def new(type_: StructType, n0: i32) -> Self:
+                def new(n0: i32) -> Self:
                     ll = gc_alloc[ArrayData_c](1)
                     ll.shape = gc_alloc[i32](NDIM)
                     ll.shape[0] = n0
@@ -44,7 +44,8 @@ def ndarray(DTYPE):
                     ll.items = gc_alloc[DTYPE](total)
                     return Self.__make__(ll)
 
-            return OpSpec(new)
+                m_n0: MetaArg = args_m[1]
+            return OpSpec(new, [m_n0])
 
         def __getitem__(self: Self, i: i32) -> DTYPE:
             return self.__ll__.items[i]
