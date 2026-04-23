@@ -31,6 +31,17 @@ test_lazysin:
 test_simple:
 	spy simple_loop.spy
 
+test_build_lazy:
+	spy build -x lazy_add.spy
+
+test_build_lazysin:
+	spy build -x lazy_add_sin.spy
+
+test_build_simple:
+	spy build -x simple_loop.spy
+
+test: test_lazy test_lazysin test_simple test_build_lazy test_build_lazysin test_build_simple
+
 
 rs_lazysimple:
 	spy rs lazy_simple.spy | ./simplify_rs_output.py

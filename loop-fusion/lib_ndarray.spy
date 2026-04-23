@@ -7,8 +7,7 @@ Expression fusion demo for SPy
 # pylint: skip-file
 
 from unsafe import gc_alloc, gc_ptr
-from operator import OpSpec
-from types import StructType
+from operator import OpSpec, MetaArg
 import math
 
 
@@ -45,7 +44,7 @@ def ndarray(DTYPE, NDIM):
             if len(args_m) != NDIM + 1:
                 raise StaticError("Wrong number of shape arguments")
 
-            # def new(type_: StructType, *args: Args[NDIM, i32]) -> Self:
+            # def new(*args: Args[NDIM, i32]) -> Self:
             #     ll = gc_alloc[ArrayData_c](1)
             #     ll.shape = gc_alloc[i32](NDIM)
             #     for i, n in unroll(enumerate(args)):
@@ -58,7 +57,7 @@ def ndarray(DTYPE, NDIM):
 
             if NDIM == 1:
 
-                def new(type_: StructType, n0: i32) -> Self:
+                def new(n0: i32) -> Self:
                     ll = gc_alloc[ArrayData_c](1)
                     ll.shape = gc_alloc[i32](NDIM)
                     ll.shape[0] = n0
@@ -66,9 +65,11 @@ def ndarray(DTYPE, NDIM):
                     ll.items = gc_alloc[DTYPE](_size)
                     return Self.__make__(ll, _size)
 
+                m_n0: MetaArg = args_m[1]
+                return OpSpec(new, [m_n0])
             elif NDIM == 2:
 
-                def new(type_: StructType, n0: i32, n1: i32) -> Self:
+                def new(n0: i32, n1: i32) -> Self:
                     ll = gc_alloc[ArrayData_c](1)
                     ll.shape = gc_alloc[i32](NDIM)
                     ll.shape[0] = n0
@@ -77,10 +78,11 @@ def ndarray(DTYPE, NDIM):
                     ll.items = gc_alloc[DTYPE](_size)
                     return Self.__make__(ll, _size)
 
+                m_n0: MetaArg = args_m[1]
+                m_n1: MetaArg = args_m[2]
+                return OpSpec(new, [m_n0, m_n1])
             else:
                 raise StaticError("Should never happen")
-
-            return OpSpec(new)
 
         # @blue.metafunc
         # def size(m_self):

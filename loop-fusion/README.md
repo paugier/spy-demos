@@ -53,7 +53,7 @@ code.
 
 - [ ] `simplify_rs_output.py` as a rs flag (https://github.com/spylang/spy/issues/474).
 
-- [ ] Fix build (https://github.com/spylang/spy/issues/475)
+- [x] Fix build (https://github.com/spylang/spy/issues/475)
 
 ### Less important
 

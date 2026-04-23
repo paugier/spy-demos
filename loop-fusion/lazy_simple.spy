@@ -4,13 +4,11 @@
 
 @struct
 class Array:
-
     val: i32
 
     @blue
     @classmethod
     def make_kernel(cls):
-
         @force_inline
         def inlined_kernel(arr: Array) -> i32:
             return arr.val
@@ -20,7 +18,6 @@ class Array:
 
 @blue.generic
 def Lazy(EXPR_T):
-
     @struct
     class Self:
         expr: EXPR_T
@@ -40,7 +37,6 @@ def Lazy(EXPR_T):
 
 
 def main() -> None:
-
     arr = Array(42)
 
     LazyArray = Lazy[Array]

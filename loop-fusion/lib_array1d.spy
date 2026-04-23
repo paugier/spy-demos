@@ -3,12 +3,10 @@
 
 from unsafe import gc_alloc, gc_ptr
 from operator import OpSpec, MetaArg
-from types import StructType
 
 
 @blue.generic
 def ArrayData(DTYPE):
-
     @struct
     class Self:
         shape: gc_ptr[i32]
