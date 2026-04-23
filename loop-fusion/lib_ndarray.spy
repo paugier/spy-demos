@@ -3,9 +3,6 @@ Expression fusion demo for SPy
 
 """
 
-# mypy: ignore-errors
-# pylint: skip-file
-
 from unsafe import gc_alloc, gc_ptr
 from operator import OpSpec, MetaArg
 import math
@@ -37,7 +34,6 @@ def ndarray(DTYPE, NDIM):
         _NDIM = NDIM
 
         __ll__: gc_ptr[ArrayData_c]
-        _size: i32
 
         @blue.metafunc
         def __new__(*args_m):
@@ -63,7 +59,7 @@ def ndarray(DTYPE, NDIM):
                     ll.shape[0] = n0
                     _size = n0
                     ll.items = gc_alloc[DTYPE](_size)
-                    return Self.__make__(ll, _size)
+                    return Self.__make__(ll)
 
                 m_n0: MetaArg = args_m[1]
                 return OpSpec(new, [m_n0])
@@ -76,7 +72,7 @@ def ndarray(DTYPE, NDIM):
                     ll.shape[1] = n1
                     _size = n0 * n1
                     ll.items = gc_alloc[DTYPE](_size)
-                    return Self.__make__(ll, _size)
+                    return Self.__make__(ll)
 
                 m_n0: MetaArg = args_m[1]
                 m_n1: MetaArg = args_m[2]
@@ -84,31 +80,26 @@ def ndarray(DTYPE, NDIM):
             else:
                 raise StaticError("Should never happen")
 
-        # @blue.metafunc
-        # def size(m_self):
-        #     # def _size(self: Self) -> i32:
-        #     #     _size = 1
-        #     #     for dim in unroll(range(NDIM)):
-        #     #         _size = _size * self.__ll__.shape[dim]
-        #     #     return _size
-        #     if NDIM == 1:
-        #         def _size(self: Self) -> i32:
-        #             return self.__ll__.shape[0]
-        #     elif NDIM == 2:
-        #         def _size(self: Self) -> i32:
-        #             shape = self.__ll__.shape
-        #             return shape[0] * shape[1]
-        #     else:
-        #         raise StaticError("Should never happen")
+        @blue.metafunc
+        def size(m_self):
+            # def _size(self: Self) -> i32:
+            #     _size = 1
+            #     for dim in unroll(range(NDIM)):
+            #         _size = _size * self.__ll__.shape[dim]
+            #     return _size
+            if NDIM == 1:
 
-        #     return OpSpec(_size)
+                def _size(self: Self) -> i32:
+                    return self.__ll__.shape[0]
+            elif NDIM == 2:
 
-        # to avoid a bug
-        #    File "~/dev/spy/spy/vm/function.py", line 278, in op_CALL
-        #    assert w_func.w_functype.kind != "metafunc"
+                def _size(self: Self) -> i32:
+                    shape = self.__ll__.shape
+                    return shape[0] * shape[1]
+            else:
+                raise StaticError("Should never happen")
 
-        def size(self) -> i32:
-            return self._size
+            return OpSpec(_size)
 
         @blue.metafunc
         def __setitem__(*args_m):
@@ -177,29 +168,6 @@ def ndarray(DTYPE, NDIM):
         @property
         def shape(self) -> list[i32]:
             return ptr2list(self.__ll__.shape, NDIM)
-
-        # @blue.metafunc
-        # def fill(m_self, m_val) -> None:
-        #     """Fill with a constant value."""
-
-        #     if NDIM == 1:
-        #         def _fill(self: Self, val: DTYPE) -> None:
-        #             for i in range(self.size()):
-        #                 self[i] = val
-        #     elif NDIM == 2:
-
-        #         def _fill(self: Self, val: DTYPE) -> None:
-        #             n0, n1 = self.shape[0], self.shape[1]
-
-        #             for i0 in range(n0):
-        #                 for i1 in range(n1):
-        #                     self[i0, i1] = val
-
-        #     return OpSpec(_fill)
-
-        # to avoid a bug
-        #  File "~/dev/spy/spy/vm/function.py", line 278, in op_CALL
-        #    assert w_func.w_functype.kind != "metafunc"
 
         def fill(self, val: DTYPE) -> None:
             for i in range(self.size()):
