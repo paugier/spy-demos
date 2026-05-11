@@ -48,3 +48,10 @@ rs_lazysimple:
 
 rs_lazysimple_noinline:
 	spy rs --no-inline lazy_simple.spy | ./simplify_rs_output.py
+
+
+bench_spy:
+	spy build --release -x bench_spy.spy
+
+bench_numpy:
+	python bench_numpy.py

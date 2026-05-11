@@ -6,6 +6,7 @@ Expression fusion demo for SPy
 from unsafe import gc_alloc, gc_ptr
 from operator import OpSpec, MetaArg
 import math
+from __spy__ import force_inline
 
 
 def ptr2list(ptr: gc_ptr[i32], length: i32) -> list[i32]:
@@ -154,12 +155,14 @@ def ndarray(DTYPE, NDIM):
         @classmethod
         def make_kernel(cls):
             if NDIM == 1:
-                # @force_inline
+
+                @force_inline
                 def kernel(self: Self, i: i32) -> DTYPE:
                     return self.__ll__.items[i]
 
             if NDIM == 2:
-                # @force_inline
+
+                @force_inline
                 def kernel(self: Self, i0: i32, i1: i32) -> DTYPE:
                     return self.__ll__.items[(i0 * self.__ll__.shape[1]) + i1]
 
@@ -202,12 +205,14 @@ def LazyAdd(DTYPE, NDIM, LEFT_T, RIGHT_T):
             right_kernel = RIGHT_T.make_kernel()
 
             if NDIM == 1:
-                # @force_inline
+
+                @force_inline
                 def kernel(expr: Self, i: i32) -> DTYPE:
                     return left_kernel(expr.left, i) + right_kernel(expr.right, i)
 
             elif NDIM == 2:
-                # @force_inline
+
+                @force_inline
                 def kernel(expr: Self, i0: i32, i1: i32) -> DTYPE:
                     return left_kernel(expr.left, i0, i1) + right_kernel(
                         expr.right, i0, i1
@@ -276,12 +281,14 @@ def LazySin(DTYPE, NDIM, ARG_TYPE):
             arg_kernel = ARG_TYPE.make_kernel()
 
             if NDIM == 1:
-                # @force_inline
+
+                @force_inline
                 def kernel(expr: Self, i: i32) -> DTYPE:
                     return math.sin(arg_kernel(expr.arg, i))
 
             elif NDIM == 2:
-                # @force_inline
+
+                @force_inline
                 def kernel(expr: Self, i0: i32, i1: i32) -> DTYPE:
                     return math.sin(arg_kernel(expr.arg, i0, i1))
 
