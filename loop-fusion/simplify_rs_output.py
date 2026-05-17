@@ -32,7 +32,6 @@ if name not in files:
 for name, content in files.items():
     files[name] = (
         content.replace(name + "::", "")
-        .replace("::Self", "")
         .replace(str(Path.home()), "~")
     )
 

@@ -2,52 +2,45 @@ format:
 	ruff format *.spy *.py
 
 
-rs_lazy:
-	spy rs lazy_add.spy --dump lib_array1d.spy | ./simplify_rs_output.py
+rs_array1d:
+	spy rs --linearize use_array1d.spy | ./simplify_rs_output.py
 
-rs_lazysin:
-	spy rs lazy_add_sin.spy --dump lib_ndarray.spy | ./simplify_rs_output.py
+rs_ndarray:
+	spy rs --linearize use_ndarray.spy | ./simplify_rs_output.py
 
 rs_simple:
-	spy rs simple_loop.spy --dump lib_array1d_simple.spy | ./simplify_rs_output.py
+	spy rs --linearize use_array1d_simple.spy | ./simplify_rs_output.py
 
 
-rs_liblazy:
-	spy rs lib_array1d.spy | ./simplify_rs_output.py
+rs_lib_array1d:
+	spy rs --linearize lib_array1d.spy | ./simplify_rs_output.py
 
-rs_liblazysin:
-	spy rs lib_ndarray.spy | ./simplify_rs_output.py
+rs_lib_ndarray:
+	spy rs --linearize lib_ndarray.spy | ./simplify_rs_output.py
 
-rs_libsimple:
-	spy rs lib_array1d_simple.spy | ./simplify_rs_output.py
+rs_lib_simple:
+	spy rs --linearize lib_array1d_simple.spy | ./simplify_rs_output.py
 
 
-test_lazy:
-	spy lazy_add.spy
+test_array1d:
+	spy lib_array1d.spy
 
-test_lazysin:
-	spy lazy_add_sin.spy
+test_ndarray:
+	spy lib_ndarray.spy
 
 test_simple:
-	spy simple_loop.spy
+	spy lib_array1d_simple.spy
 
-test_build_lazy:
-	spy build -x lazy_add.spy
+test_build_array1d:
+	spy build -x lib_array1d.spy
 
-test_build_lazysin:
-	spy build -x lazy_add_sin.spy
+test_build_ndarray:
+	spy build -x lib_ndarray.spy
 
 test_build_simple:
-	spy build -x simple_loop.spy
+	spy build -x lib_array1d_simple.spy
 
-test: test_lazy test_lazysin test_simple test_build_lazy test_build_lazysin test_build_simple
-
-
-rs_lazysimple:
-	spy rs lazy_simple.spy | ./simplify_rs_output.py
-
-rs_lazysimple_noinline:
-	spy rs --no-inline lazy_simple.spy | ./simplify_rs_output.py
+test: test_array1d test_ndarray test_simple test_build_array1d test_build_ndarray test_build_simple
 
 
 bench_spy:

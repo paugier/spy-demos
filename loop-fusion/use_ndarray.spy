@@ -3,9 +3,6 @@ Expression fusion demo for SPy
 
 """
 
-# mypy: ignore-errors
-# pylint: skip-file
-
 from lib_ndarray import ndarray, sin
 
 
