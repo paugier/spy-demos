@@ -1,8 +1,5 @@
 # Demo about array loop fusion with SPy
 
-This demo uses the branch https://github.com/paugier/spy/tree/generic-class (but this is
-a detail since this branch is just about syntactic sugar).
-
 This demo is organized with 3 scripts using 3 implementations of minimal array libraries.
 
 - `use_array1d.spy` (which uses `lib_array1d.spy`) is a minimal example (only 1d and only
@@ -30,12 +27,14 @@ code.
 
 ## TODO list before communicating on this demo
 
-- [ ] Generic struct in SPy (https://github.com/paugier/spy/tree/generic-class)
+- [x] Generic struct in SPy (https://github.com/paugier/spy/tree/generic-class)
 
-- [ ] `type A = ndarray[DTYPE, NDIM]` syntax for generic struct & update the code
+- [ ] avoid `@blue.generic` by using generic struct:
 
-- [ ] `__blue_checks__` for generic struct
-  (https://github.com/spylang/spy/pull/448#issuecomment-4199438746) & update the code
+  - [ ] `type A = ndarray[DTYPE, NDIM]` syntax for generic struct & update the code
+
+  - [ ] `__class_init__` for generic struct
+    (https://github.com/spylang/spy/pull/448#issuecomment-4199438746) & update the code
 
 - [x] Fix bug `assert w_func.w_functype.kind != "metafunc"`
   (https://github.com/spylang/spy/issues/463)

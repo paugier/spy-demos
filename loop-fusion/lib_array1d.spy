@@ -3,20 +3,10 @@ from operator import OpSpec, MetaArg
 from __spy__ import force_inline
 
 
-@blue.generic
-def ArrayData(DTYPE):
-    @struct
-    class Self:
-        shape: gc_ptr[i32]
-        items: gc_ptr[DTYPE]
-
-    return Self
-
-
-# @struct
-# class ArrayData[DTYPE]:
-#     shape: gc_ptr[i32]
-#     items: gc_ptr[DTYPE]
+@struct
+class ArrayData[DTYPE]:
+    shape: gc_ptr[i32]
+    items: gc_ptr[DTYPE]
 
 
 @blue.generic
