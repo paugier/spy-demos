@@ -31,7 +31,7 @@ code.
 
 - [ ] avoid `@blue.generic` by using generic struct:
 
-  - [ ] `type A = ndarray[DTYPE, NDIM]` syntax for generic struct & update the code
+  - [ ] `nonlocal A = ndarray[DTYPE, NDIM]` syntax for generic struct & update the code
 
   - [ ] `__class_init__` for generic struct
     (https://github.com/spylang/spy/pull/448#issuecomment-4199438746) & update the code
@@ -46,7 +46,7 @@ code.
 - [x] A `@force_inline` decorator to force inlining during redshifting
   (https://github.com/spylang/spy/issues/464) & update the code
 
-- [ ] `abs(1.2)` in SPy (https://github.com/spylang/spy/issues/461) & update the code
+- [x] `abs(1.2)` in SPy (https://github.com/spylang/spy/issues/461) & update the code
 
 - [ ] `simplify_rs_output.py` as a rs flag (https://github.com/spylang/spy/issues/474).
 

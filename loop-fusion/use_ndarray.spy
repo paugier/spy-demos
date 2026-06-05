@@ -40,13 +40,7 @@ def main() -> None:
     # -----------------------------------------------------------------------
 
     out1_sin: ndarray[f64, 1] = x + sin(x)
-
-    # TypeError: mismatched types: def w_abs(vm: "SPyVM", w_x: W_I32) -> W_I32:
-    # assert abs(out1_sin[0] - 1.84147) < 0.00001
-
-    print("should be very small")
-    print(out1_sin[0] - 1.84147)
+    assert abs(out1_sin[0] - 1.84147) < 0.00001
 
     out2_sin: ndarray[f64, 2] = x2 + sin(x2)
-    print("should be very small")
-    print(out2_sin[0, 0] - 1.84147)
+    assert abs(out2_sin[0, 0] - 1.84147) < 0.00001
