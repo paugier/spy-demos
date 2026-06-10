@@ -4,7 +4,7 @@ Format SPy redshifted code using ruff format.
 
 Reads redshifted SPy code from stdin, temporarily replaces invalid Python
 tokens with length-preserving Unicode substitutes, runs `ruff format`, then
-restores the original names and prints the result to stdout.
+restores the original names (with ANSI coloring) and prints to stdout.
 """
 
 import re
@@ -58,6 +58,10 @@ DOLLAR_SUB = "ꞩ"  # U+A7A9  LATIN SMALL LETTER S WITH OBLIQUE STROKE
 # Matches ANSI escape sequences (e.g. \x1b[34;01m or \x1b[00m)
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
+# ANSI color for backtick-quoted names — bright magenta, matching spy redshift
+ANSI_NAME = "\x1b[35;01m"
+ANSI_RESET = "\x1b[00m"
+
 
 # ---------------------------------------------------------------------------
 # Name-level transformations
@@ -92,13 +96,14 @@ def fix_code(code: str) -> str:
     return code
 
 
-def unfix_code(code: str) -> str:
+def unfix_code(code: str, color: bool = True) -> str:
     """Restore every modified identifier to its original form."""
 
     def maybe_unfix(m: re.Match) -> str:
         token = m.group()
         if any(c in token for c in SPECIAL_CHARS):
-            return f"`{unfix_name(token)}`"
+            name = f"`{unfix_name(token)}`"
+            return f"{ANSI_NAME}{name}{ANSI_RESET}" if color else name
         if DOLLAR_SUB in token:
             return token.replace(DOLLAR_SUB, "$")
         return token
@@ -112,6 +117,7 @@ def unfix_code(code: str) -> str:
 
 
 def main() -> None:
+    color = sys.stdout.isatty()
     original = sys.stdin.read()
     fixed = fix_code(original)
 
@@ -137,7 +143,7 @@ def main() -> None:
     finally:
         tmp_path.unlink()
 
-    print(unfix_code(formatted), end="")
+    print(unfix_code(formatted, color=color), end="")
 
 
 if __name__ == "__main__":
