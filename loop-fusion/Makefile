@@ -3,23 +3,23 @@ format:
 
 
 rs_array1d:
-	spy rs --linearize use_array1d.spy | ./simplify_rs_output.py
+	spy rs --linearize use_array1d.spy | ./simplify_rs_output.py | ./spy_ruff_format.py
 
 rs_ndarray:
-	spy rs --linearize use_ndarray.spy | ./simplify_rs_output.py
+	spy rs --linearize use_ndarray.spy | ./simplify_rs_output.py | ./spy_ruff_format.py
 
 rs_simple:
-	spy rs --linearize use_array1d_simple.spy | ./simplify_rs_output.py
+	spy rs --linearize use_array1d_simple.spy | ./simplify_rs_output.py | ./spy_ruff_format.py
 
 
 rs_lib_array1d:
-	spy rs --linearize lib_array1d.spy | ./simplify_rs_output.py
+	spy rs --linearize lib_array1d.spy | ./simplify_rs_output.py | ./spy_ruff_format.py
 
 rs_lib_ndarray:
-	spy rs --linearize lib_ndarray.spy | ./simplify_rs_output.py
+	spy rs --linearize lib_ndarray.spy | ./simplify_rs_output.py | ./spy_ruff_format.py
 
 rs_lib_simple:
-	spy rs --linearize lib_array1d_simple.spy | ./simplify_rs_output.py
+	spy rs --linearize lib_array1d_simple.spy | ./simplify_rs_output.py | ./spy_ruff_format.py
 
 
 test_array1d:
