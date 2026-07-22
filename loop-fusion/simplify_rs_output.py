@@ -30,10 +30,7 @@ if name not in files:
 
 
 for name, content in files.items():
-    files[name] = (
-        content.replace(name + "::", "")
-        .replace(str(Path.cwd()), ".")
-    )
+    files[name] = content.replace(name + "::", "").replace(str(Path.cwd()), ".")
 
 for name, content in files.items():
     print(f"# {name}.spy")

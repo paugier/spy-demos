@@ -48,3 +48,9 @@ bench_spy:
 
 bench_numpy:
 	python bench_numpy.py
+
+bench_spy_loop:
+	spy build --release -x bench_spy_loop.spy
+
+bench_numpy_loop:
+	python bench_numpy_loop.py
