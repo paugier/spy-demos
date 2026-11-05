@@ -56,7 +56,7 @@ code.
 
 - [ ] `unroll` for blue loops
 
-- [ ] something like `*args: Args[NDIM, i32]` for red functions
+- [ ] something like `*args: *types` for red functions
 
 Last thing, it would be good to avoid too much repetitions (heritage, protocols?) which
 would become unpractical to implement a full array library.

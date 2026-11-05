@@ -41,14 +41,19 @@ def ndarray(DTYPE, NDIM):
             if len(args_m) != NDIM + 1:
                 raise StaticError("Wrong number of shape arguments")
 
-            # def new(*args: Args[NDIM, i32]) -> Self:
+            # types: list[type] = []
+            # for m_arg in args_m:
+            #     assert m_arg.static_type == i32
+            #     types.append(i32)
+            #
+            # def new(*args: *types) -> Self:
             #     ll = gc_alloc[ArrayData_c](1)
             #     ll.shape = gc_alloc[i32](NDIM)
-            #     for i, n in unroll(enumerate(args)):
-            #         ll.shape[i] = n
             #     _size = 1
-            #     for n in unroll(args):
-            #         _size = _size * n
+            #     for i in unroll(range(NDIM)):
+            #         n_i = args[i]
+            #         ll.shape[i] = n_i
+            #         _size = _size * n_i
             #     ll.items = gc_alloc[DTYPE](_size)
             #     return Self.__make__(ll)
 
@@ -280,6 +285,12 @@ def LazySin(DTYPE, NDIM, ARG_TYPE):
         def make_kernel(cls):
             arg_kernel = ARG_TYPE.make_kernel()
 
+            # types = [i32 for _ in range(NDIM)]
+            #
+            # @force_inline
+            # def kernel(expr: Self, *indexes: *types) -> DTYPE:
+            #     return math.sin(arg_kernel(expr.arg, *indexes))
+
             if NDIM == 1:
 
                 @force_inline
@@ -352,29 +363,25 @@ def LazySin(DTYPE, NDIM, ARG_TYPE):
 #   - ndarray     -> LazySin node (no computation)
 # ---------------------------------------------------------------------------
 
+_FLOAT_DTYPES = (f32, f64)
+
 
 @blue.metafunc
 def sin(m_x):
     T = m_x.static_type
 
-    if T == f64:
+    for DTYPE in unroll(_FLOAT_DTYPES):
+        if T == DTYPE:
 
-        def sin_scalar(x: f64) -> f64:
-            return math.sin(x)
+            def sin_scalar(x: DTYPE) -> DTYPE:
+                return math.sin(x)
 
-        return OpSpec(sin_scalar)
+            return OpSpec(sin_scalar)
 
     # Generic array case: extract DTYPE and NDIM from the ndarray type
     # and return a LazySin node.
 
-    # We would like to be able to get DTYPE and NDIM (blue values) from T
-
-    # We will be able to have (hasattr not yet avail but should be easy, see
-    # https://github.com/spylang/spy/issues/247#issuecomment-4155144151)
-
-    # if hasattr(T, "_DTYPE") and hasattr(T, "_NDIM"):
-
-    if True:
+    if hasattr(T, "_DTYPE") and hasattr(T, "_NDIM"):
         DTYPE = T._DTYPE
         NDIM = T._NDIM
         A = ndarray[DTYPE, NDIM]
@@ -385,10 +392,7 @@ def sin(m_x):
 
         return OpSpec(sin_lazy)
 
-    # We would like to be able to have blue iterators
-    # for DTYPE in unroll([f32, f64]):
-
-    # raise StaticError(f"sin not defined for {T}")
+    raise StaticError(f"sin not defined for {T}")
 
 
 def main() -> None:
